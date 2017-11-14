@@ -78,7 +78,7 @@
      inkscape:cx="763.78621"
      inkscape:cy="430.77676"
      inkscape:document-units="mm"
-     inkscape:current-layer="g4951"
+     inkscape:current-layer="g4991"
      showgrid="false"
      inkscape:window-width="1920"
      inkscape:window-height="1027"
@@ -157,7 +157,8 @@
   <g
      inkscape:label="labels_shadow"
      id="g4951"
-     inkscape:groupmode="layer">
+     inkscape:groupmode="layer"
+     sodipodi:insensitive="true">
     <use
        style="display:inline;fill:#000000;fill-opacity:1;filter:url(#filter5052)"
        x="0"
@@ -195,8 +196,7 @@
      inkscape:groupmode="layer"
      id="layer2"
      inkscape:label="labels"
-     style="display:inline"
-     sodipodi:insensitive="true">
+     style="display:inline">
     <g
        id="g4991"
        style="fill:#b3f500;fill-opacity:1">
@@ -242,7 +242,7 @@
            style="line-height:1;letter-spacing:0.26458332px;fill:#b3f500;fill-opacity:1;stroke-width:0.26458332"
            y="245.10109"
            x="188.68245"
-           sodipodi:role="line">A11</tspan></text>
+           sodipodi:role="line">A8</tspan></text>
       <text
          id="text4590-7-3"
          y="256.58035"
