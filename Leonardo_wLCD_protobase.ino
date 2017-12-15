@@ -7,6 +7,7 @@
     hardware:
         Board:
             Arduino compatible (with serial port)
+            Arduino MICRO
             LED on pin 13
         Connections:
             D4 --> push button to GND
@@ -15,17 +16,18 @@
             D7 --> push button to GND
             D8 / A8 --> poti 5V-GND
             D9 --> LED green
-            D9 --> LED blue
-            D9 --> LED white
+            D10 --> LED blue
+            D11 --> LED white
 
             SCK --> Clock input of ?
             MOSI --> Data input of ?
 
-            I2C SDA --> Data for ?
-            I2C SCL --> Clock for ?
+            D2 I2C SDA --> Data for ?
+            D3 I2C SCL --> Clock for ?
 
-            RX --> Serial receive for ?
-            TX --> Serial transmit for ?
+            D0 RX --> Serial receive for DMX
+            D1 TX --> Serial transmit for DMX
+            D12 --> DMX direction (Send/Receive)
 
 
     libraries used:
@@ -47,6 +49,11 @@
         ~ FastLED
             MIT, FastLED-Team
             https://github.com/FastLED/FastLED
+        ~ DMXSerial
+			Copyright (c) 2005-2012 by Matthias Hertel,
+			http://www.mathertel.de
+        ~ Servo
+            Arduino Built in Servo Library
 
     written by stefan krueger (s-light),
         github@s-light.eu, http://s-light.eu, https://github.com/s-light/
@@ -95,6 +102,7 @@
 
 #include <LiquidCrystal.h>
 
+#include <Servo.h>
 
 #include <slight_DebugMenu.h>
 #include <slight_FaderLin.h>
@@ -105,7 +113,9 @@
 // #include <Adafruit_NeoPixel.h>
 // #include <Adafruit_DotStar.h>
 
-#include "FastLED.h"
+// #include "FastLED.h"
+
+#include <DMXSerial.h>
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Info
@@ -120,7 +130,7 @@ void sketchinfo_print(Print &out) {
     out.println(F("|                       \" \"                      |"));
     out.println(F("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"));
     out.println(F("| Leonardo_wLCD_protobase.ino"));
-    out.println(F("|   basis for multiple quick test things"));
+    out.println(F("|   branch: 'DMXServo' - receive DMX and control one Servo"));
     out.println(F("|"));
     out.println(F("| This Sketch has a debug-menu:"));
     out.println(F("| send '?'+Return for help"));
@@ -220,7 +230,7 @@ slight_ButtonInput button(
 // const uint16_t myStrip_PixelCount = 120;
 // const uint16_t myStrip_PixelCount = 384;
 
-const uint16_t myStrip_PixelCount = 144;
+// const uint16_t myStrip_PixelCount = 144;
 
 
 // Parameter 1 = number of pixels in strip
@@ -244,35 +254,66 @@ const uint16_t myStrip_PixelCount = 144;
 // Adafruit_DotStar myStrip = Adafruit_DotStar(myStrip_PixelCount, DOTSTAR_RGB);
 
 // CRGB leds[myStrip_PixelCount];
-CRGBArray<myStrip_PixelCount> leds;
+// CRGBArray<myStrip_PixelCount> leds;
 
-bool strip_off = true;
+// bool strip_off = true;
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // sequencer
 
-enum sequencer_modes {
-    sequencer_OFF,
-    sequencer_CHANNELCHECK,
-    sequencer_HORIZONTAL,
-    sequencer_SPIRAL,
-};
-
-uint8_t sequencer_mode = sequencer_OFF;
-
-uint32_t sequencer_timestamp_last = millis();
-uint32_t sequencer_interval = 1000; // ms
-
+// enum sequencer_modes {
+//     sequencer_OFF,
+//     sequencer_CHANNELCHECK,
+//     sequencer_HORIZONTAL,
+//     sequencer_SPIRAL,
+// };
 //
-uint16_t value_low = 1;
-uint16_t value_high = 65000;
+// uint8_t sequencer_mode = sequencer_OFF;
+//
+// uint32_t sequencer_timestamp_last = millis();
+// uint32_t sequencer_interval = 1000; // ms
+//
+// //
+// uint16_t value_low = 1;
+// uint16_t value_high = 65000;
+
+
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// DMX
+
+const uint8_t dmx_pin_direction = 12;
+
+const uint16_t dmx_channel_count = 2;
 
 
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Servo
+
+const uint8_t servo_pin = 1;
+
+Servo myServo;
+
+// myServo.write(
+//     map(val, 1, 254, 0, 180)
+// );
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
+
+
+
+
+
+
+
+
+
+
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // functions
@@ -448,9 +489,9 @@ void setup_LCD(Print &out) {
         out.println(F("\t print welcome text"));
         // set cursor (first char, first line)
         lcd.setCursor(0, 0);
-        lcd.print("hello world :-)");
-        lcd.setCursor(0, 1);
         lcd.print("32U4wLCD_proto");
+        lcd.setCursor(0, 1);
+        lcd.print("DMXServo");
 
         // delay(500);
         // lcd.clear();
@@ -637,41 +678,41 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             // }
 
 
-            strip_off = !strip_off;
-            if (strip_off) {
-                Serial.println(F("switch on"));
-                // leds.fill_solid(CRGB::White);
-                // leds.fadeToBlackBy(40);
-                // switch all leds on - one after the other
-                for(int whiteLed = 0; whiteLed < myStrip_PixelCount; whiteLed = whiteLed + 1) {
-                    leds[whiteLed] = CRGB::White;
-                    FastLED.show();
-                    delay(10);
-                }
-            }
-            else {
-                Serial.println(F("switch off"));
-                // leds.fadeToBlackBy(40);
-                leds.fill_solid(CRGB::Black);
-            }
-            FastLED.show();
+            // strip_off = !strip_off;
+            // if (strip_off) {
+            //     Serial.println(F("switch on"));
+            //     // leds.fill_solid(CRGB::White);
+            //     // leds.fadeToBlackBy(40);
+            //     // switch all leds on - one after the other
+            //     for(int whiteLed = 0; whiteLed < myStrip_PixelCount; whiteLed = whiteLed + 1) {
+            //         leds[whiteLed] = CRGB::White;
+            //         FastLED.show();
+            //         delay(10);
+            //     }
+            // }
+            // else {
+            //     Serial.println(F("switch off"));
+            //     // leds.fadeToBlackBy(40);
+            //     leds.fill_solid(CRGB::Black);
+            // }
+            // FastLED.show();
 
         } break;
         case slight_ButtonInput::event_ClickLong : {
             Serial.println(F("click long"));
             // Move a single white led
-            for(int whiteLed = 0; whiteLed < myStrip_PixelCount; whiteLed = whiteLed + 1) {
-                // Turn our current led on to white, then show the leds
-                leds[whiteLed] = CRGB::White;
-
-                // Show the leds (only one of which is set to white, from above)
-                FastLED.show();
-
-                // Wait a little bit
-                delay(10);
-
-                // Turn our current led back to black for the next loop around
-                leds[whiteLed] = CRGB::Black;
+            // for(int whiteLed = 0; whiteLed < myStrip_PixelCount; whiteLed = whiteLed + 1) {
+            //     // Turn our current led on to white, then show the leds
+            //     leds[whiteLed] = CRGB::White;
+            //
+            //     // Show the leds (only one of which is set to white, from above)
+            //     FastLED.show();
+            //
+            //     // Wait a little bit
+            //     delay(10);
+            //
+            //     // Turn our current led back to black for the next loop around
+            //     leds[whiteLed] = CRGB::Black;
             }
         } break;
         case slight_ButtonInput::event_ClickDouble : {
@@ -696,18 +737,40 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
 
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// LED Strip
+// DMX
 
-void setup_LEDStrip(Print &out) {
-    out.println(F("setup LEDStrip:"));
+void setup_DMX(Print &out) {
+    out.println(F("setup DMX:"));
 
-    out.println(F("\t init lib"));
-    // myStrip.begin();
-    FastLED.addLeds<APA102, RGB>(leds, myStrip_PixelCount);
-    // out.println(F("\t start with leds off"));
-    // myStrip.show();
+    out.println(F("\t TODO"));
     out.println(F("\t finished."));
 }
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Servo
+
+void setup_Servo(Print &out) {
+    out.println(F("setup Servo:"));
+
+    out.println(F("\t TODO"));
+    myServo.attach(servo_pin);
+    myServo.write(0);
+    out.println(F("\t finished."));
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// LED Strip
+
+// void setup_LEDStrip(Print &out) {
+//     out.println(F("setup LEDStrip:"));
+//
+//     out.println(F("\t init lib"));
+//     // myStrip.begin();
+//     FastLED.addLeds<APA102, RGB>(leds, myStrip_PixelCount);
+//     // out.println(F("\t start with leds off"));
+//     // myStrip.show();
+//     out.println(F("\t finished."));
+// }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // LEDBoard
