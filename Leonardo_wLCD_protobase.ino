@@ -189,6 +189,8 @@ slight_DebugMenu myDebugMenu(Serial, Serial, 15);
 
 LiquidCrystal lcd(A5, A4, A3, A2, A1, A0);
 
+uint32_t lcd_update_timestamp_last = 0;
+const uint16_t lcd_update_interval = 500; //ms
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // FaderLin
@@ -285,8 +287,13 @@ slight_ButtonInput button(
 
 const uint8_t dmx_pin_direction = 12;
 
-const uint16_t dmx_channel_count = 2;
+// timeout in milliseconds
+const uint32_t dmx_valid_timeout = 1000;
 
+bool dmx_valid = false;
+
+uint16_t dmx_start_channel = 80;
+uint8_t dmx_value = 0;
 
 
 
@@ -295,11 +302,12 @@ const uint16_t dmx_channel_count = 2;
 
 const uint8_t servo_pin = 1;
 
+// pulse width in microseconds,
+const uint16_t servo_min_pw = 544;
+const uint16_t servo_max_pw = 2400;
+
 Servo myServo;
 
-// myServo.write(
-//     map(val, 1, 254, 0, 180)
-// );
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
@@ -497,6 +505,68 @@ void setup_LCD(Print &out) {
         // lcd.clear();
     }
     out.println(F("\t finished."));
+}
+
+
+// Display Layout:
+//     0000000000111111
+//     0123456789012345
+//  0  Mode: Manual   *
+//  1  ch:512 value:255
+
+void print_Mode(LiquidCrystal &lcd) {
+    lcd.setCursor(0, 0);
+    lcd.print('Mode: ');
+    // if (device_mode == mode_dmx) {
+    if (dmx_valid) {
+        lcd.print('DMX');
+    }
+    // else if (device_mode == mode_manual) {
+    else {
+        lcd.print('Manual');
+    }
+}
+
+void print_DMXSignal(LiquidCrystal &lcd) {
+    if (dmx_valid) {
+        // blink
+        if ((millis() % 1000) <= 500) {
+            lcd.setCursor(15, 0);
+            lcd.print('*');
+        }
+        else {
+            lcd.setCursor(15, 0);
+            lcd.print('°');
+        }
+    }
+    else {
+        lcd.setCursor(15, 0);
+        lcd.print('!');
+    }
+}
+
+void print_DMXValue(LiquidCrystal &lcd) {
+    lcd.setCursor(3, 1);
+    // lcd.print(dmx_start_channel);
+    slight_DebugMenu::print_uint8_align_right(lcd, dmx_start_channel);
+}
+
+void print_DMXValue(LiquidCrystal &lcd) {
+    lcd.setCursor(13, 1);
+    // lcd.print(dmx_value);
+    slight_DebugMenu::print_uint8_align_right(lcd, dmx_value);
+}
+
+void update_LCD(LiquidCrystal &lcd) {
+    print_Mode(lcd);
+    print_DMXSignal(lcd);
+    lcd.setCursor(0, 1);
+    lcd.print('ch:');
+    print_CHValue(lcd);
+
+    lcd.setCursor(7, 1);
+    lcd.print('value:');
+    print_DMXValue(lcd);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -713,7 +783,7 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             //
             //     // Turn our current led back to black for the next loop around
             //     leds[whiteLed] = CRGB::Black;
-            }
+            // }
         } break;
         case slight_ButtonInput::event_ClickDouble : {
             // Serial.println(F("click double"));
@@ -742,8 +812,66 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
 void setup_DMX(Print &out) {
     out.println(F("setup DMX:"));
 
-    out.println(F("\t TODO"));
+    // pin for direction
+    pinMode(dmx_pin_direction, OUTPUT);
+
+    // set to receive mode
+    // Serial.println(F("\t set direction pin to Low = 'Receive' "));
+    // digitalWrite(dmx_pin_direction, LOW);
+    Serial.println(F("\t init as DMXReceiver"));
+    DMXSerial.init(DMXReceiver, dmx_pin_direction);
+
+    // set to send mode
+    // Serial.println(F("\t set direction pin to High = 'Send' "));
+    // digitalWrite(dmx_pin_direction, HIGH);
+    // Serial.println(F("\t init as DMXController"));
+    // DMXSerial.init(DMXController, dmx_pin_direction);
+
+
+
+    // Serial.println(F("\t set some values"));
+    // DMXSerial.write(10, 255);
+    // DMXSerial.write(11, 255);
+    // DMXSerial.write(12, 1);
+    // read dmx values
+    // DMXSerial.read(1);
+
     out.println(F("\t finished."));
+}
+
+void handle_DMX() {
+
+    bool dmx_valid_new = false;
+	if (DMXSerial.noDataSince() < dmx_valid_timeout) {
+		dmx_valid_new = true;
+	}
+
+    // check if dmx_valid state has changed
+    if (dmx_valid != dmx_valid_new) {
+        dmx_valid = dmx_valid_new;
+        print_Mode();
+        print_DMXSignal();
+	}
+
+    uint8_t dmx_value_new = DMXSerial.read(dmx_start_channel);
+    // check if dmx_value has changed
+    if (dmx_value != dmx_value_new) {
+        dmx_value = dmx_value_new;
+        print_DMXValue();
+        myServo.write(
+            map(dmx_value, 0, 255, 0, 180)
+        );
+    }
+
+
+
+    // combine 16bit value
+	// uiDMXValue_Pan  = DMXSerial.read(11) << 8;
+	// uiDMXValue_Pan  = uiDMXValue_Pan | DMXSerial.read(12);
+    // read 8bit value
+	// uiDMXValue_Pan  = DMXSerial.read(12);
+
+
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -753,7 +881,8 @@ void setup_Servo(Print &out) {
     out.println(F("setup Servo:"));
 
     out.println(F("\t TODO"));
-    myServo.attach(servo_pin);
+    // myServo.attach(servo_pin);
+    myServo.attach(servo_pin, servo_min_pw, servo_max_pw);
     myServo.write(0);
     out.println(F("\t finished."));
 }
@@ -1064,7 +1193,7 @@ void setup() {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // setup LEDBoard
 
-        setup_LEDStrip(out);
+        // setup_LEDStrip(out);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // setup LEDBoard
@@ -1122,15 +1251,32 @@ void loop() {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // timed things
 
-        if (sequencer_mode != sequencer_OFF) {
-            if(
-                (millis() - sequencer_timestamp_last) > sequencer_interval
-            ) {
-                sequencer_timestamp_last =  millis();
-                // calculate_step();
-            }
+        // if (sequencer_mode != sequencer_OFF) {
+        //     if(
+        //         (millis() - sequencer_timestamp_last) > sequencer_interval
+        //     ) {
+        //         sequencer_timestamp_last =  millis();
+        //         // calculate_step();
+        //     }
+        // }
+
+
+        if(
+            (millis() - lcd_update_timestamp_last) > lcd_update_interval
+        ) {
+            lcd_update_timestamp_last =  millis();
+            print_DMXSignal();
         }
 
+
+        // if(
+        //     (millis() - dmx_timestamp_last) > dmx_interval
+        // ) {
+        //     dmx_timestamp_last =  millis();
+        //     handle_DMX();
+        // }
+
+        handle_DMX();
 
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
