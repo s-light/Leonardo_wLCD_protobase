@@ -206,9 +206,25 @@ const uint16_t lcd_update_interval = 500; //ms
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // button
 
+// enum button_names {
+//     button
+// };
+
 slight_ButtonInput button(
     0,  // byte cbID_New
     4,  // byte cbPin_New,
+    button_getInput,  // tCbfuncGetInput cbfuncGetInput_New,
+    button_onEvent,  // tcbfOnEvent cbfCallbackOnEvent_New,
+      30,  // const uint16_t cwDuration_Debounce_New = 30,
+     500,  // const uint16_t cwDuration_HoldingDown_New = 1000,
+      50,  // const uint16_t cwDuration_ClickSingle_New =   50,
+     500,  // const uint16_t cwDuration_ClickLong_New =   3000,
+     500   // const uint16_t cwDuration_ClickDouble_New = 1000
+);
+
+slight_ButtonInput button(
+    1,  // byte cbID_New
+    5,  // byte cbPin_New,
     button_getInput,  // tCbfuncGetInput cbfuncGetInput_New,
     button_onEvent,  // tcbfOnEvent cbfCallbackOnEvent_New,
       30,  // const uint16_t cwDuration_Debounce_New = 30,
@@ -703,7 +719,7 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
     // // (*pInstance).printEvent(Serial, bEvent);
     // Serial.println();
 
-    // uint8_t button_id = (*pInstance).getID();
+    uint8_t button_id = (*pInstance).getID();
 
     // show event additional infos:
     switch (bEvent) {
@@ -716,18 +732,18 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             // Serial.println(F("FRL down"));
         } break;
         case slight_ButtonInput::event_HoldingDown : {
-            uint32_t duration = (*pInstance).getDurationActive();
-            Serial.println(F("duration active: "));
-            Serial.println(duration);
-            if (duration <= 5000) {
-                // myFaderRGB_fadeTo(1000, 65000, 65000, 65000);
-            }
-            else if (duration <= 10000) {
-                // myFaderRGB_fadeTo(1000, 0, 65000, 65000);
-            }
-            else {
-                // myFaderRGB_fadeTo(1000, 0, 0, 65000);
-            }
+            // uint32_t duration = (*pInstance).getDurationActive();
+            // Serial.println(F("duration active: "));
+            // Serial.println(duration);
+            // if (duration <= 5000) {
+            //     // myFaderRGB_fadeTo(1000, 65000, 65000, 65000);
+            // }
+            // else if (duration <= 10000) {
+            //     // myFaderRGB_fadeTo(1000, 0, 65000, 65000);
+            // }
+            // else {
+            //     // myFaderRGB_fadeTo(1000, 0, 0, 65000);
+            // }
 
         } break;
         case slight_ButtonInput::event_Up : {
@@ -766,6 +782,16 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             //     leds.fill_solid(CRGB::Black);
             // }
             // FastLED.show();
+
+
+            if (button_id == 0) {
+                dmx_start_channel -= 1;
+                print_CHValue();
+            }
+            if (button_id == 1) {
+                dmx_start_channel += 1;
+                print_CHValue();
+            }
 
         } break;
         case slight_ButtonInput::event_ClickLong : {
@@ -1226,6 +1252,11 @@ void setup() {
         // myDebugMenu.set_user_EOC_char(';');
         myDebugMenu.set_callback(handleMenu_Main);
         myDebugMenu.begin();
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // update_LCD
+        delay(1000);
+        update_LCD();
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // go
