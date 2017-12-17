@@ -204,35 +204,85 @@ const uint16_t lcd_update_interval = 500; //ms
 // );
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// analog in
+
+const uint8_t analog_pin = 8;
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // button
 
 // enum button_names {
 //     button
 // };
 
-slight_ButtonInput button(
-    0,  // byte cbID_New
-    4,  // byte cbPin_New,
-    button_getInput,  // tCbfuncGetInput cbfuncGetInput_New,
-    button_onEvent,  // tcbfOnEvent cbfCallbackOnEvent_New,
-      30,  // const uint16_t cwDuration_Debounce_New = 30,
-     500,  // const uint16_t cwDuration_HoldingDown_New = 1000,
-      50,  // const uint16_t cwDuration_ClickSingle_New =   50,
-     500,  // const uint16_t cwDuration_ClickLong_New =   3000,
-     500   // const uint16_t cwDuration_ClickDouble_New = 1000
-);
+const uint16_t button_duration_Debounce      =   10;
+const uint16_t button_duration_HoldingDown   = 1000;
+const uint16_t button_duration_ClickSingle   =   40;
+const uint16_t button_duration_ClickLong     = 1000;
+const uint16_t button_duration_ClickDouble   =  200;
 
-slight_ButtonInput button(
-    1,  // byte cbID_New
-    5,  // byte cbPin_New,
-    button_getInput,  // tCbfuncGetInput cbfuncGetInput_New,
-    button_onEvent,  // tcbfOnEvent cbfCallbackOnEvent_New,
-      30,  // const uint16_t cwDuration_Debounce_New = 30,
-     500,  // const uint16_t cwDuration_HoldingDown_New = 1000,
-      50,  // const uint16_t cwDuration_ClickSingle_New =   50,
-     500,  // const uint16_t cwDuration_ClickLong_New =   3000,
-     500   // const uint16_t cwDuration_ClickDouble_New = 1000
-);
+const uint8_t button_1 = 0;
+const uint8_t button_2 = 1;
+const uint8_t button_3 = 2;
+const uint8_t button_4 = 3;
+
+
+const uint8_t buttons_COUNT = 4;
+slight_ButtonInput buttons[buttons_COUNT] = {
+    // button_CWOD_TOUCH
+    slight_ButtonInput(
+        button_1,
+        4,
+        button_getInput,
+        button_onEvent,
+        button_duration_Debounce,
+        button_duration_HoldingDown,
+        button_duration_ClickSingle,
+        button_duration_ClickLong,
+        button_duration_ClickDouble
+    ),
+    // button_CWOD_CHECKBUTTON
+    slight_ButtonInput(
+        button_2,
+        5,
+        button_getInput,
+        button_onEvent,
+        button_duration_Debounce,
+        button_duration_HoldingDown,
+        button_duration_ClickSingle,
+        button_duration_ClickLong,
+        button_duration_ClickDouble
+    ),
+    // button_CWOD_CALIBRATE
+    slight_ButtonInput(
+        button_3,
+        6,
+        button_getInput,
+        button_onEvent,
+        button_duration_Debounce,
+        button_duration_HoldingDown,
+        button_duration_ClickSingle,
+        button_duration_ClickLong,
+        button_duration_ClickDouble
+    ),
+    // button_CWOD_OBJECTDETECTED
+    slight_ButtonInput(
+        button_4,
+        7,
+        button_getInput,
+        button_onEvent,
+        button_duration_Debounce,
+        button_duration_HoldingDown,
+        button_duration_ClickSingle,
+        button_duration_ClickLong,
+        button_duration_ClickDouble
+    )
+};
+
+
+
+
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Pixel LED Strip
@@ -316,11 +366,14 @@ uint8_t dmx_value = 0;
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Servo
 
-const uint8_t servo_pin = 1;
+const uint8_t servo_pin = 9;
 
-// pulse width in microseconds,
-const uint16_t servo_min_pw = 544;
-const uint16_t servo_max_pw = 2400;
+// pulse width in microseconds (default)
+// const uint16_t servo_min_pw = 544;
+// const uint16_t servo_max_pw = 2400;
+// values for conrad modelcraft BS25A
+const uint16_t servo_min_pw = 750;
+const uint16_t servo_max_pw = 1000;
 
 Servo myServo;
 
@@ -532,14 +585,14 @@ void setup_LCD(Print &out) {
 
 void print_Mode(LiquidCrystal &lcd) {
     lcd.setCursor(0, 0);
-    lcd.print('Mode: ');
+    lcd.print("Mode: ");
     // if (device_mode == mode_dmx) {
     if (dmx_valid) {
-        lcd.print('DMX');
+        lcd.print("DMX   ");
     }
     // else if (device_mode == mode_manual) {
     else {
-        lcd.print('Manual');
+        lcd.print("Manual");
     }
 }
 
@@ -548,20 +601,20 @@ void print_DMXSignal(LiquidCrystal &lcd) {
         // blink
         if ((millis() % 1000) <= 500) {
             lcd.setCursor(15, 0);
-            lcd.print('*');
+            lcd.print("*");
         }
         else {
             lcd.setCursor(15, 0);
-            lcd.print('°');
+            lcd.print("+");
         }
     }
     else {
         lcd.setCursor(15, 0);
-        lcd.print('!');
+        lcd.print("!");
     }
 }
 
-void print_DMXValue(LiquidCrystal &lcd) {
+void print_CHValue(LiquidCrystal &lcd) {
     lcd.setCursor(3, 1);
     // lcd.print(dmx_start_channel);
     slight_DebugMenu::print_uint8_align_right(lcd, dmx_start_channel);
@@ -574,14 +627,15 @@ void print_DMXValue(LiquidCrystal &lcd) {
 }
 
 void update_LCD(LiquidCrystal &lcd) {
+    lcd.clear();
     print_Mode(lcd);
     print_DMXSignal(lcd);
     lcd.setCursor(0, 1);
-    lcd.print('ch:');
+    lcd.print("ch:");
     print_CHValue(lcd);
 
     lcd.setCursor(7, 1);
-    lcd.print('value:');
+    lcd.print("value:");
     print_DMXValue(lcd);
 }
 
@@ -693,14 +747,25 @@ void update_LCD(LiquidCrystal &lcd) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // button
 
-void setup_Buttons(Print &out) {
+void buttons_init(Print &out) {
     out.println(F("setup button:")); {
-        out.println(F("\t set button pin"));
-        pinMode(button.getPin(), INPUT_PULLUP);
-        out.println(F("\t button begin"));
-        button.begin();
+        // out.println(F("\t set button pin"));
+        // pinMode(button.getPin(), INPUT_PULLUP);
+        // out.println(F("\t button begin"));
+        // button.begin();
+        for (size_t index = 0; index < buttons_COUNT; index++) {
+            pinMode(buttons[index].getPin(), INPUT_PULLUP);
+            buttons[index].begin();
+        }
     }
     out.println(F("\t finished."));
+}
+
+
+void buttons_update() {
+    for (size_t index = 0; index < buttons_COUNT; index++) {
+        buttons[index].update();
+    }
 }
 
 boolean button_getInput(uint8_t id, uint8_t pin) {
@@ -732,18 +797,36 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             // Serial.println(F("FRL down"));
         } break;
         case slight_ButtonInput::event_HoldingDown : {
-            // uint32_t duration = (*pInstance).getDurationActive();
+            uint32_t duration = (*pInstance).getDurationActive();
             // Serial.println(F("duration active: "));
             // Serial.println(duration);
-            // if (duration <= 5000) {
-            //     // myFaderRGB_fadeTo(1000, 65000, 65000, 65000);
-            // }
-            // else if (duration <= 10000) {
-            //     // myFaderRGB_fadeTo(1000, 0, 65000, 65000);
-            // }
-            // else {
-            //     // myFaderRGB_fadeTo(1000, 0, 0, 65000);
-            // }
+
+            uint8_t count = 1;
+
+            if (duration <= 5000) {
+                count = 5;
+            }
+            else if (duration <= 10000) {
+                count = 10;
+            }
+            else if (duration <= 15000) {
+                count = 50;
+            }
+
+            if (button_id == button_1) {
+                dmx_start_channel -= (uint16_t)count;
+                print_CHValue(lcd);
+            }
+            if (button_id == button_2) {
+                dmx_start_channel += (uint16_t)count;
+                print_CHValue(lcd);
+            }
+            if (button_id == button_3) {
+                set_value(dmx_value - count);
+            }
+            if (button_id == button_4) {
+                set_value(dmx_value + count);
+            }
 
         } break;
         case slight_ButtonInput::event_Up : {
@@ -784,13 +867,29 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
             // FastLED.show();
 
 
-            if (button_id == 0) {
-                dmx_start_channel -= 1;
-                print_CHValue();
+            if (button_id == button_1) {
+                dmx_start_channel -= (uint16_t)1;
+                print_CHValue(lcd);
             }
-            if (button_id == 1) {
-                dmx_start_channel += 1;
-                print_CHValue();
+            if (button_id == button_2) {
+                dmx_start_channel += (uint16_t)1;
+                print_CHValue(lcd);
+            }
+            if (button_id == button_3) {
+                Serial.print("dmx_value: ");
+                Serial.print(dmx_value);
+                Serial.print(" -> ");
+                set_value(dmx_value - 1);
+                Serial.print(dmx_value);
+                Serial.println();
+            }
+            if (button_id == button_4) {
+                Serial.print("dmx_value: ");
+                Serial.print(dmx_value);
+                Serial.print(" -> ");
+                set_value(dmx_value + 1);
+                Serial.print(dmx_value);
+                Serial.println();
             }
 
         } break;
@@ -875,17 +974,21 @@ void handle_DMX() {
     // check if dmx_valid state has changed
     if (dmx_valid != dmx_valid_new) {
         dmx_valid = dmx_valid_new;
-        print_Mode();
-        print_DMXSignal();
+        print_Mode(lcd);
+        print_DMXSignal(lcd);
 	}
 
-    uint8_t dmx_value_new = DMXSerial.read(dmx_start_channel);
-    // check if dmx_value has changed
-    if (dmx_value != dmx_value_new) {
-        dmx_value = dmx_value_new;
-        print_DMXValue();
-        myServo.write(
-            map(dmx_value, 0, 255, 0, 180)
+    if (dmx_valid) {
+        uint8_t dmx_value_new = DMXSerial.read(dmx_start_channel);
+        set_value(dmx_value_new);
+    }
+    else {
+        set_value(
+            map(
+                analogRead(analog_pin),
+                 0, 1023,
+                 0, 255
+            )
         );
     }
 
@@ -900,18 +1003,34 @@ void handle_DMX() {
 
 }
 
+
+void set_value(uint8_t dmx_value_new) {
+    // check if dmx_value has changed
+    if (dmx_value != dmx_value_new) {
+        dmx_value = dmx_value_new;
+        print_DMXValue(lcd);
+        myServo.write(
+            map(dmx_value, 0, 255, 0, 180)
+        );
+    }
+}
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Servo
 
 void setup_Servo(Print &out) {
     out.println(F("setup Servo:"));
 
-    out.println(F("\t TODO"));
+    out.println(F("\t setup manual analog pin"));
+    pinMode(analog_pin, INPUT);
+
+    out.println(F("\t setup servo with timing"));
     // myServo.attach(servo_pin);
     myServo.attach(servo_pin, servo_min_pw, servo_max_pw);
     myServo.write(0);
     out.println(F("\t finished."));
 }
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // LED Strip
@@ -1213,11 +1332,11 @@ void setup() {
     out.print(F("# Free RAM = "));
     out.println(freeRam());
 
-    setup_Buttons(out);
+    buttons_init(out);
 
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // setup LEDBoard
+    // setup LEDStrip
 
         // setup_LEDStrip(out);
 
@@ -1225,6 +1344,16 @@ void setup() {
     // setup LEDBoard
 
         // setup_Boards(out);
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // setup Servo
+
+        setup_Servo(out);
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // setup DMX
+
+        setup_DMX(out);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // setup Fader
@@ -1256,7 +1385,7 @@ void setup() {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // update_LCD
         delay(1000);
-        update_LCD();
+        update_LCD(lcd);
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // go
@@ -1277,7 +1406,8 @@ void loop() {
     // update sub parts
 
         // myFaderRGB.update();
-        button.update();
+        // button.update();
+        buttons_update();
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // timed things
@@ -1296,7 +1426,7 @@ void loop() {
             (millis() - lcd_update_timestamp_last) > lcd_update_interval
         ) {
             lcd_update_timestamp_last =  millis();
-            print_DMXSignal();
+            print_DMXSignal(lcd);
         }
 
 
