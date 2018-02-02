@@ -148,7 +148,7 @@ void sketchinfo_print(Print &out) {
 boolean infoled_state = 0;
 const byte infoled_pin = 13;
 
-unsigned long debugOut_LiveSign_TimeStamp_LastAction = 0;
+uint32_t debugOut_LiveSign_TimeStamp_LastAction = 0;
 const uint16_t debugOut_LiveSign_UpdateInterval = 1000; //ms
 
 boolean debugOut_LiveSign_Serial_Enabled = 0;
@@ -185,9 +185,23 @@ slight_ButtonInput button(
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // LSM303 compass
 
+LSM303 compass;
+
+bool serial_data_out_enabled = false;
+uint32_t serial_data_out_timestamp_last = 0;
+const uint16_t serial_data_out_interval = 500;
+
+uint32_t compass_update_lcd_timestamp_last = 0;
+const uint16_t compass_update_lcd_interval = 100;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
+
+
+
+
+
+
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // functions
@@ -363,9 +377,9 @@ void setup_LCD(Print &out) {
         out.println(F("\t print welcome text"));
         // set cursor (first char, first line)
         lcd.setCursor(0, 0);
-        lcd.print("hello world :-)");
-        lcd.setCursor(0, 1);
         lcd.print("32U4wLCD_proto");
+        lcd.setCursor(0, 1);
+        lcd.print("LSM303D compass");
 
         // delay(500);
         // lcd.clear();
@@ -466,6 +480,49 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // LSM303 compass
 
+void setup_LSM303(Print &out) {
+    out.println(F("setup LSM303D:")); {
+        out.println(F("\t  start I2C"));
+        Wire.begin();
+        out.println(F("\t  init compass"));
+        compass.init();
+        out.println(F("\t  enable defaults"));
+        compass.enableDefault();
+    }
+    out.println(F("\tfinished."));
+}
+
+void compass_update_lcd() {
+    compass.read();
+
+    char line[16];
+    snprintf(
+        line,
+        sizeof(line),
+        "A%4d %4d %4d",
+        // "A: %4d %4d %4d",
+        (compass.a.x / 100),
+        (compass.a.y / 100),
+        (compass.a.z / 100)
+    );
+    lcd.setCursor(0, 0);
+    lcd.print(line);
+    // snprintf(
+    //     line,
+    //     sizeof(line),
+    //     "M: %6d %6d %6d",
+    //     compass.m.x,
+    //     compass.m.y,
+    //     compass.m.z
+    // );
+    // lcd.setCursor(0, 0);
+    // lcd.print(line);
+
+}
+
+void serial_data_out_print() {
+    Print &out = Serial;
+}
 
 
 
@@ -582,14 +639,21 @@ void loop() {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // timed things
 
-        // if (sequencer_mode != sequencer_OFF) {
-        //     if(
-        //         (millis() - sequencer_timestamp_last) > sequencer_interval
-        //     ) {
-        //         sequencer_timestamp_last =  millis();
-        //         // calculate_step();
-        //     }
-        // }
+        if(
+            (millis() - compass_update_lcd_timestamp_last) > compass_update_lcd_interval
+        ) {
+            compass_update_lcd_timestamp_last =  millis();
+            compass_update_lcd();
+        }
+
+        if (serial_data_out_enabled) {
+            if(
+                (millis() - serial_data_out_timestamp_last) > serial_data_out_interval
+            ) {
+                serial_data_out_timestamp_last =  millis();
+                serial_data_out_print();
+            }
+        }
 
 
 
