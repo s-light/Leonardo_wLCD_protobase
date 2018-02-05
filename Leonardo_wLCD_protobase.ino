@@ -266,6 +266,16 @@ bool dmx_valid = false;
 uint16_t dmx_start_channel = 80;
 uint8_t dmx_value = 0;
 
+enum display_modes {
+    dm_uint8,
+    dm_int8,
+    dm_uint16,
+    dm_int16,
+    dm_uint32,
+    dm_int32,
+};
+
+display_modes display_mode = dm_uint8;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
@@ -590,10 +600,10 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
                 print_ch(lcd);
             }
             if (button_id == button_3_YELLOW) {
-                set_value(dmx_value - count);
+                //
             }
             if (button_id == button_4_RED) {
-                set_value(dmx_value + count);
+                //
             }
 
         } break;
@@ -603,37 +613,6 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
         } break;
         case slight_ButtonInput::event_Click : {
             Serial.println(F("click"));
-            // if (sequencer_mode == sequencer_OFF) {
-            //     sequencer_mode = sequencer_CHANNELCHECK;
-            //     sequencer_interval = 500;
-            //     Serial.print(F("\t sequencer_mode: CHANNELCHECK\n"));
-            // }
-            // else {
-            //     sequencer_off();
-            //     sequencer_mode = sequencer_OFF;
-            //     Serial.print(F("\t sequencer_mode: OFF\n"));
-            // }
-
-
-            // strip_off = !strip_off;
-            // if (strip_off) {
-            //     Serial.println(F("switch on"));
-            //     // leds.fill_solid(CRGB::White);
-            //     // leds.fadeToBlackBy(40);
-            //     // switch all leds on - one after the other
-            //     for(int whiteLed = 0; whiteLed < myStrip_PixelCount; whiteLed = whiteLed + 1) {
-            //         leds[whiteLed] = CRGB::White;
-            //         FastLED.show();
-            //         delay(10);
-            //     }
-            // }
-            // else {
-            //     Serial.println(F("switch off"));
-            //     // leds.fadeToBlackBy(40);
-            //     leds.fill_solid(CRGB::Black);
-            // }
-            // FastLED.show();
-
 
             if (button_id == button_1_BLACK) {
                 dmx_start_channel -= (uint16_t)1;
@@ -644,50 +623,20 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
                 print_ch(lcd);
             }
             if (button_id == button_3_YELLOW) {
-                Serial.print("dmx_value: ");
-                Serial.print(dmx_value);
-                Serial.print(" -> ");
-                set_value(dmx_value - 1);
-                Serial.print(dmx_value);
-                Serial.println();
+                //
             }
             if (button_id == button_4_RED) {
-                Serial.print("dmx_value: ");
-                Serial.print(dmx_value);
-                Serial.print(" -> ");
-                set_value(dmx_value + 1);
-                Serial.print(dmx_value);
-                Serial.println();
+                next_display_mode();
             }
 
         } break;
         case slight_ButtonInput::event_ClickLong : {
             Serial.println(F("click long"));
-            // Move a single white led
-            // for(int whiteLed = 0; whiteLed < myStrip_PixelCount; whiteLed = whiteLed + 1) {
-            //     // Turn our current led on to white, then show the leds
-            //     leds[whiteLed] = CRGB::White;
-            //
-            //     // Show the leds (only one of which is set to white, from above)
-            //     FastLED.show();
-            //
-            //     // Wait a little bit
-            //     delay(10);
-            //
-            //     // Turn our current led back to black for the next loop around
-            //     leds[whiteLed] = CRGB::Black;
-            // }
         } break;
         case slight_ButtonInput::event_ClickDouble : {
             // Serial.println(F("click double"));
-            // sequencer_mode = sequencer_HORIZONTAL;
-            // sequencer_interval = 1000;
-            // Serial.print(F("\t sequencer_mode: HORIZONTAL\n"));
         } break;
         case slight_ButtonInput::event_ClickTriple : {
-            // sequencer_mode = sequencer_SPIRAL;
-            // sequencer_interval = 100;
-            // Serial.print(F("\t sequencer_mode: SPIRAL\n"));
             // Serial.println(F("click triple"));
         } break;
         // case slight_ButtonInput::event_ClickMulti : {
@@ -714,7 +663,7 @@ void setup_LCD(Print &out) {
         lcd.setCursor(0, 0);
         lcd.print("32U4wLCD_proto");
         lcd.setCursor(0, 1);
-        lcd.print("DMXServo");
+        lcd.print("DMXMonitor");
 
         // delay(500);
         // lcd.clear();
@@ -724,10 +673,15 @@ void setup_LCD(Print &out) {
 
 
 // Display Layout:
-//     0000000000111111
-//     0123456789012345
-//  0  ch:512 uint16  *
-//  1  255 255 255 255
+//              0000000000111111
+//              0123456789012345
+//           0  ch:512 uint16  *
+// dm_uint8  1   255 255 255 255
+// dm_int8   1  -128-128-128-128
+// dm_uint16 1   65535  65535
+// dm_int16  1  -32768 -32768
+// dm_uint32 1   4294967295
+// dm_int32  1  -2147483648
 
 cursor_pos_t lp_ch_text = {0, 0};
 cursor_pos_t lp_ch = {3, 0};
@@ -744,24 +698,25 @@ void print_ch(LiquidCrystal &lcd) {
 
 void print_mode(LiquidCrystal &lcd) {
     lcd.setCursor(lp_mode.x, lp_mode.y);
-    // switch (display_mode) {
-    //     case dm_uint8: {
-    //         lcd.print("uint8 ");
-    //     } break;
-    //     case dm_int8: {
-    //         lcd.print(" int8 ");
-    //     } break;
-    //     case dm_uint16: {
-    //         lcd.print("uint16");
-    //     } break;
-    //     case dm_int16: {
-    //         lcd.print(" int16");
-    //     } break;
-    // }
-    if (dmx_valid) {
-        lcd.print("uint8 ");
-    } else {
-        lcd.print("uint16");
+    switch (display_mode) {
+        case dm_uint8: {
+            lcd.print("uint8 ");
+        } break;
+        case dm_int8: {
+            lcd.print(" int8 ");
+        } break;
+        case dm_uint16: {
+            lcd.print("uint16");
+        } break;
+        case dm_int16: {
+            lcd.print(" int16");
+        } break;
+        case dm_uint32: {
+            lcd.print("uint32");
+        } break;
+        case dm_int32: {
+            lcd.print(" int32");
+        } break;
     }
 }
 
@@ -780,19 +735,96 @@ void print_DMXSignal(LiquidCrystal &lcd) {
 }
 
 
-void print_DMXValue(LiquidCrystal &lcd) {
+
+void print_DMXValues_clear(LiquidCrystal &lcd) {
     lcd.setCursor(lp_values.x, lp_values.y);
-    slight_DebugMenu::print_uint8_align_right(lcd, dmx_value);
+    lcd.print("                ");
+}
+
+void print_DMXValues(LiquidCrystal &lcd) {
+    lcd.setCursor(lp_values.x, lp_values.y);
+    switch (display_mode) {
+        case dm_uint8: {
+            lcd.print(" ");
+            uint8_t value = 0;
+            value = DMXSerial.read(dmx_start_channel + 0);
+            slight_DebugMenu::print_uint8_align_right(lcd, value);
+            lcd.print(" ");
+            value = DMXSerial.read(dmx_start_channel + 1);
+            slight_DebugMenu::print_uint8_align_right(lcd, value);
+            lcd.print(" ");
+            value = DMXSerial.read(dmx_start_channel + 2);
+            slight_DebugMenu::print_uint8_align_right(lcd, value);
+            lcd.print(" ");
+            value = DMXSerial.read(dmx_start_channel + 3);
+            slight_DebugMenu::print_uint8_align_right(lcd, value);
+        } break;
+        case dm_int8: {
+            uint8_t value = 0;
+            value = DMXSerial.read(dmx_start_channel + 0);
+            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
+            value = DMXSerial.read(dmx_start_channel + 1);
+            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
+            value = DMXSerial.read(dmx_start_channel + 2);
+            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
+            value = DMXSerial.read(dmx_start_channel + 3);
+            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
+        } break;
+        case dm_uint16: {
+            lcd.print(" ");
+            uint16_t value = 0;
+            value |= DMXSerial.read(dmx_start_channel + 0) << 8;
+            value |= DMXSerial.read(dmx_start_channel + 1);
+            slight_DebugMenu::print_uint16_align_right(lcd, value);
+            lcd.print(" ");
+            lcd.print(" ");
+            value = 0;
+            value |= DMXSerial.read(dmx_start_channel + 2) << 8;
+            value |= DMXSerial.read(dmx_start_channel + 3);
+            slight_DebugMenu::print_uint16_align_right(lcd, value);
+        } break;
+        case dm_int16: {
+            uint16_t value = 0;
+            value |= DMXSerial.read(dmx_start_channel + 0) << 8;
+            value |= DMXSerial.read(dmx_start_channel + 1);
+            slight_DebugMenu::print_uint16_align_right(lcd,  int16_t (value));
+            lcd.print(" ");
+            value = 0;
+            value |= DMXSerial.read(dmx_start_channel + 2) << 8;
+            value |= DMXSerial.read(dmx_start_channel + 3);
+            slight_DebugMenu::print_uint16_align_right(lcd,  int16_t (value));
+        } break;
+        case dm_uint32: {
+            uint32_t value = 0;
+            value |= uint32_t (DMXSerial.read(dmx_start_channel + 0)) << 24;
+            value |= uint32_t (DMXSerial.read(dmx_start_channel + 1)) << 16;
+            value |= uint32_t (DMXSerial.read(dmx_start_channel + 2)) << 8;
+            value |= DMXSerial.read(dmx_start_channel + 1);
+            slight_DebugMenu::print_uint32_align_right(lcd, value);
+        } break;
+        case dm_int32: {
+            uint32_t value = 0;
+            value |= uint32_t (DMXSerial.read(dmx_start_channel + 0)) << 24;
+            value |= uint32_t (DMXSerial.read(dmx_start_channel + 1)) << 16;
+            value |= uint32_t (DMXSerial.read(dmx_start_channel + 2)) << 8;
+            value |= DMXSerial.read(dmx_start_channel + 1);
+            slight_DebugMenu::print_uint32_align_right(lcd, int32_t (value));
+        } break;
+    }
+
 }
 
 void update_LCD(LiquidCrystal &lcd) {
     lcd.clear();
-    print_mode(lcd);
-    print_DMXSignal(lcd);
+
     lcd.setCursor(lp_ch_text.x, lp_ch_text.y);
     lcd.print("ch:");
     print_ch(lcd);
-    print_DMXValue(lcd);
+
+    print_mode(lcd);
+    print_DMXSignal(lcd);
+
+    print_DMXValues(lcd);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -842,10 +874,11 @@ void handle_DMX() {
         print_DMXSignal(lcd);
 	}
 
-    // if (dmx_valid) {
-    //     uint8_t dmx_value_new = DMXSerial.read(dmx_start_channel);
-    //     set_value(dmx_value_new);
-    // }
+    if (dmx_valid) {
+        print_DMXValues(lcd);
+        // uint8_t dmx_value_new = DMXSerial.read(dmx_start_channel);
+        // set_value(dmx_value_new);
+    }
     // else {
     //     set_value(
     //         map(
@@ -870,13 +903,42 @@ void handle_DMX() {
 
 void set_value(uint8_t dmx_value_new) {
     // check if dmx_value has changed
-    // if (dmx_value != dmx_value_new) {
-    //     dmx_value = dmx_value_new;
-    //     print_DMXValue(lcd);
-    //     myServo.write(
-    //         map(dmx_value, 0, 255, 0, 180)
-    //     );
-    // }
+    if (dmx_value != dmx_value_new) {
+        dmx_value = dmx_value_new;
+        // print_DMXValues(lcd);
+        // myServo.write(
+        //     map(dmx_value, 0, 255, 0, 180)
+        // );
+    }
+}
+
+void next_display_mode() {
+    switch (display_mode) {
+        case dm_uint8: {
+            display_mode = dm_int8;
+        } break;
+        case dm_int8: {
+            display_mode = dm_uint16;
+        } break;
+        case dm_uint16: {
+            display_mode = dm_int16;
+        } break;
+        case dm_int16: {
+            display_mode = dm_uint32;
+        } break;
+        case dm_uint32: {
+            display_mode = dm_int32;
+        } break;
+        case dm_int32: {
+            display_mode = dm_uint8;
+        } break;
+        default: {
+            display_mode = dm_uint8;
+        }
+    }
+    print_mode(lcd);
+    print_DMXValues_clear(lcd);
+    print_DMXValues(lcd);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
