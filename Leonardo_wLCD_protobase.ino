@@ -263,7 +263,7 @@ const uint32_t dmx_valid_timeout = 1000;
 
 bool dmx_valid = false;
 
-uint16_t dmx_start_channel = 80;
+uint16_t dmx_start_channel = 1;
 uint8_t dmx_value = 0;
 
 enum display_modes {
