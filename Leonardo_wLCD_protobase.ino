@@ -623,7 +623,7 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
                 print_ch(lcd);
             }
             if (button_id == button_3_YELLOW) {
-                //
+                previous_display_mode();
             }
             if (button_id == button_4_RED) {
                 next_display_mode();
@@ -693,7 +693,10 @@ cursor_pos_t lp_values = {0, 1};
 void print_ch(LiquidCrystal &lcd) {
     lcd.setCursor(lp_ch.x, lp_ch.y);
     // lcd.print(dmx_start_channel);
-    slight_DebugMenu::print_uint16_align_right(lcd, dmx_start_channel);
+    // slight_DebugMenu::print_uint16_align_right(lcd, dmx_start_channel);
+    char line[4];
+    snprintf(line, sizeof(line), "%3d", dmx_start_channel);
+    lcd.print(line);
 }
 
 void print_mode(LiquidCrystal &lcd) {
@@ -787,12 +790,12 @@ void print_DMXValues(LiquidCrystal &lcd) {
             uint16_t value = 0;
             value |= DMXSerial.read(dmx_start_channel + 0) << 8;
             value |= DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_uint16_align_right(lcd,  int16_t (value));
+            slight_DebugMenu::print_int16_align_right(lcd,  int16_t (value));
             lcd.print(" ");
             value = 0;
             value |= DMXSerial.read(dmx_start_channel + 2) << 8;
             value |= DMXSerial.read(dmx_start_channel + 3);
-            slight_DebugMenu::print_uint16_align_right(lcd,  int16_t (value));
+            slight_DebugMenu::print_int16_align_right(lcd,  int16_t (value));
         } break;
         case dm_uint32: {
             uint32_t value = 0;
@@ -808,7 +811,7 @@ void print_DMXValues(LiquidCrystal &lcd) {
             value |= uint32_t (DMXSerial.read(dmx_start_channel + 1)) << 16;
             value |= uint32_t (DMXSerial.read(dmx_start_channel + 2)) << 8;
             value |= DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_uint32_align_right(lcd, int32_t (value));
+            slight_DebugMenu::print_int32_align_right(lcd, int32_t (value));
         } break;
     }
 
@@ -931,6 +934,35 @@ void next_display_mode() {
         } break;
         case dm_int32: {
             display_mode = dm_uint8;
+        } break;
+        default: {
+            display_mode = dm_uint8;
+        }
+    }
+    print_mode(lcd);
+    print_DMXValues_clear(lcd);
+    print_DMXValues(lcd);
+}
+
+void previous_display_mode() {
+    switch (display_mode) {
+        case dm_uint8: {
+            display_mode = dm_int32;
+        } break;
+        case dm_int8: {
+            display_mode = dm_uint8;
+        } break;
+        case dm_uint16: {
+            display_mode = dm_int8;
+        } break;
+        case dm_int16: {
+            display_mode = dm_uint16;
+        } break;
+        case dm_uint32: {
+            display_mode = dm_int16;
+        } break;
+        case dm_int32: {
+            display_mode = dm_uint32;
         } break;
         default: {
             display_mode = dm_uint8;
