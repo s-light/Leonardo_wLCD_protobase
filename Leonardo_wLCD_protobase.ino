@@ -693,7 +693,7 @@ cursor_pos_t lp_values = {0, 1};
 void print_ch(LiquidCrystal &lcd) {
     lcd.setCursor(lp_ch.x, lp_ch.y);
     // lcd.print(dmx_start_channel);
-    slight_DebugMenu::print_uint8_align_right(lcd, dmx_start_channel);
+    slight_DebugMenu::print_uint16_align_right(lcd, dmx_start_channel);
 }
 
 void print_mode(LiquidCrystal &lcd) {
