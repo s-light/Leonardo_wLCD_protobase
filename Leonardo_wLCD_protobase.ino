@@ -897,7 +897,7 @@ void print_DMXValues(LiquidCrystal &lcd) {
         } break;
     }
     lcd.print(line);
-    DebugOut.println(line);
+    // DebugOut.println(line);
 }
 
 void update_LCD(LiquidCrystal &lcd) {
