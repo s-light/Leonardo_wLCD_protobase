@@ -962,6 +962,12 @@ void handle_DMX() {
 
     if (dmx_valid) {
         // check if values are new
+        // this triggers really to much with no changing data...
+        // if (DMXSerial.dataUpdated()) {
+        //     DMXSerial.resetUpdated();
+        //     print_DMXValues(lcd);
+        // }
+        // check if values are new
         bool flag_new = false;
         for (size_t i = 0; i < sizeof(dmx_values_old); i++) {
             uint8_t value_new = DMXSerial.read(dmx_start_channel + i);
