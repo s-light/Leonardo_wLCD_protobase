@@ -276,7 +276,7 @@ enum display_modes {
     dm_int32,
 };
 
-display_modes display_mode = dm_uint8;
+display_modes display_mode = dm_int16;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
