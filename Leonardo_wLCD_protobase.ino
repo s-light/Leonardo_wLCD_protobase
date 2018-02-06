@@ -394,7 +394,7 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
         case 'H':
         case '?': {
             // help
-            out.println(F("____________________________________________________________"));
+            out.println(F("__________________________________________"));
             out.println();
             out.println(F("Help for Commands:"));
             out.println();
@@ -403,13 +403,14 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             out.println(F("\t 'y': toggle DebugOut livesign print"));
             out.println(F("\t 'Y': toggle DebugOut livesign LED"));
             out.println(F("\t 'x': tests"));
+            out.println(F("\t 'X': test snprintf"));
             out.println();
             out.println(F("\t 'A': Show 'HelloWorld' "));
             // out.println(F("\t 'a': toggle sequencer"));
             // out.println(F("\t 's': set channel 's1:65535'"));
             // out.println(F("\t 'f': DemoFadeTo(ID, value) 'f1:65535'"));
             out.println();
-            out.println(F("____________________________________________________________"));
+            out.println(F("__________________________________________"));
         } break;
         case 'i': {
             sketchinfo_print(out);
@@ -450,6 +451,89 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
             out.println();
 
             out.println(F("__________"));
+        } break;
+        case 'X': {
+            // get state
+            out.println(F("__________"));
+            out.println(F("test snprintf:"));
+            // out.print(F("result:"));
+
+            int16_t values[] = {
+                 1,  50,  300,  5000,  11333,
+                -1, -50, -300, -5000, -11333,
+            };
+
+            char line[100];
+            int16_t value = 0;
+            for (size_t i = 0; i < (sizeof(values)/sizeof(int16_t)); i++) {
+                value = values[i];
+                    snprintf(line, sizeof(line),
+                    "u  3: '%3u' = '% 3u' = '%+3u'",
+                    value, value, value
+                );
+                out.println(line);
+                snprintf(line, sizeof(line),
+                    "d  3: '%3d' = '% 3d' = '%+3d'",
+                    value, value, value
+                );
+                out.println(line);
+            }
+            for (size_t i = 0; i < (sizeof(values)/sizeof(int16_t)); i++) {
+                value = values[i];
+                    snprintf(line, sizeof(line),
+                    "u  4: '%4u' = '% 4u' = '%+4u'",
+                    value, value, value
+                );
+                out.println(line);
+                snprintf(line, sizeof(line),
+                    "d  4: '%4d' = '% 4d' = '%+4d'",
+                    value, value, value
+                );
+                out.println(line);
+            }
+            for (size_t i = 0; i < (sizeof(values)/sizeof(int16_t)); i++) {
+                value = values[i];
+                    snprintf(line, sizeof(line),
+                    "u  5: '%5u' = '% 5u' = '%+5u'",
+                    value, value, value
+                );
+                out.println(line);
+                snprintf(line, sizeof(line),
+                    "d  5: '%5d' = '% 5d' = '%+5d'",
+                    value, value, value
+                );
+                out.println(line);
+            }
+            for (size_t i = 0; i < (sizeof(values)/sizeof(int16_t)); i++) {
+                value = values[i];
+                    snprintf(line, sizeof(line),
+                    "u  6: '%6u' = '% 6u' = '%+6u'",
+                    value, value, value
+                );
+                out.println(line);
+                snprintf(line, sizeof(line),
+                    "d  6: '%6d' = '% 6d' = '%+6d'",
+                    value, value, value
+                );
+                out.println(line);
+            }
+            for (size_t i = 0; i < (sizeof(values)/sizeof(int16_t)); i++) {
+                value = values[i];
+                    snprintf(line, sizeof(line),
+                    "u  7: '%7u' = '% 7u' = '%+7u'",
+                    value, value, value
+                );
+                out.println(line);
+                snprintf(line, sizeof(line),
+                    "d  7: '%7d' = '% 7d' = '%+7d'",
+                    value, value, value
+                );
+                out.println(line);
+            }
+
+
+
+            out.println(F("__________________________________________"));
         } break;
         //---------------------------------------------------------------------
         case 'A': {
@@ -682,6 +766,12 @@ void setup_LCD(Print &out) {
 // dm_int16  1  -32768 -32768
 // dm_uint32 1   4294967295
 // dm_int32  1  -2147483648
+char dm_uint8_fs[]  = "% 3u% 3u% 3u% 3u";
+char dm_int8_fs[]   = "% 3d% 3d% 3d% 3d";
+char dm_uint16_fs[] = "% 5u % 5u";
+char dm_int16_fs[]  = "% 5d % 5d";
+char dm_uint32_fs[] = "% 10u";
+char dm_int32_fs[]  = "% 10d";
 
 cursor_pos_t lp_ch_text = {0, 0};
 cursor_pos_t lp_ch = {3, 0};
@@ -746,56 +836,47 @@ void print_DMXValues_clear(LiquidCrystal &lcd) {
 
 void print_DMXValues(LiquidCrystal &lcd) {
     lcd.setCursor(lp_values.x, lp_values.y);
+    char line[17];
     switch (display_mode) {
         case dm_uint8: {
-            lcd.print(" ");
-            uint8_t value = 0;
-            value = DMXSerial.read(dmx_start_channel + 0);
-            slight_DebugMenu::print_uint8_align_right(lcd, value);
-            lcd.print(" ");
-            value = DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_uint8_align_right(lcd, value);
-            lcd.print(" ");
-            value = DMXSerial.read(dmx_start_channel + 2);
-            slight_DebugMenu::print_uint8_align_right(lcd, value);
-            lcd.print(" ");
-            value = DMXSerial.read(dmx_start_channel + 3);
-            slight_DebugMenu::print_uint8_align_right(lcd, value);
+            snprintf(line, sizeof(line), dm_uint8_fs,
+                uint8_t(DMXSerial.read(dmx_start_channel + 0)),
+                uint8_t(DMXSerial.read(dmx_start_channel + 1)),
+                uint8_t(DMXSerial.read(dmx_start_channel + 2)),
+                uint8_t(DMXSerial.read(dmx_start_channel + 3))
+            );
         } break;
         case dm_int8: {
-            uint8_t value = 0;
-            value = DMXSerial.read(dmx_start_channel + 0);
-            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
-            value = DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
-            value = DMXSerial.read(dmx_start_channel + 2);
-            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
-            value = DMXSerial.read(dmx_start_channel + 3);
-            slight_DebugMenu::print_int8_align_right(lcd,  int8_t (value));
+            snprintf(line, sizeof(line), dm_int8_fs,
+                int8_t(DMXSerial.read(dmx_start_channel + 0)),
+                int8_t(DMXSerial.read(dmx_start_channel + 1)),
+                int8_t(DMXSerial.read(dmx_start_channel + 2)),
+                int8_t(DMXSerial.read(dmx_start_channel + 3))
+            );
         } break;
         case dm_uint16: {
-            lcd.print(" ");
-            uint16_t value = 0;
-            value |= DMXSerial.read(dmx_start_channel + 0) << 8;
-            value |= DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_uint16_align_right(lcd, value);
-            lcd.print(" ");
-            lcd.print(" ");
-            value = 0;
-            value |= DMXSerial.read(dmx_start_channel + 2) << 8;
-            value |= DMXSerial.read(dmx_start_channel + 3);
-            slight_DebugMenu::print_uint16_align_right(lcd, value);
+            uint16_t value1 = 0;
+            value1 |= DMXSerial.read(dmx_start_channel + 0) << 8;
+            value1 |= DMXSerial.read(dmx_start_channel + 1);
+            uint16_t value2 = 0;
+            value2 |= DMXSerial.read(dmx_start_channel + 2) << 8;
+            value2 |= DMXSerial.read(dmx_start_channel + 3);
+            snprintf(line, sizeof(line), dm_uint16_fs,
+                uint16_t(value1),
+                uint16_t(value2)
+            );
         } break;
         case dm_int16: {
-            uint16_t value = 0;
-            value |= DMXSerial.read(dmx_start_channel + 0) << 8;
-            value |= DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_int16_align_right(lcd,  int16_t (value));
-            lcd.print(" ");
-            value = 0;
-            value |= DMXSerial.read(dmx_start_channel + 2) << 8;
-            value |= DMXSerial.read(dmx_start_channel + 3);
-            slight_DebugMenu::print_int16_align_right(lcd,  int16_t (value));
+            uint16_t value1 = 0;
+            value1 |= DMXSerial.read(dmx_start_channel + 0) << 8;
+            value1 |= DMXSerial.read(dmx_start_channel + 1);
+            uint16_t value2 = 0;
+            value2 |= DMXSerial.read(dmx_start_channel + 2) << 8;
+            value2 |= DMXSerial.read(dmx_start_channel + 3);
+            snprintf(line, sizeof(line), dm_int16_fs,
+                int16_t(value1),
+                int16_t(value2)
+            );
         } break;
         case dm_uint32: {
             uint32_t value = 0;
@@ -803,7 +884,7 @@ void print_DMXValues(LiquidCrystal &lcd) {
             value |= uint32_t (DMXSerial.read(dmx_start_channel + 1)) << 16;
             value |= uint32_t (DMXSerial.read(dmx_start_channel + 2)) << 8;
             value |= DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_uint32_align_right(lcd, value);
+            snprintf(line, sizeof(line), dm_uint32_fs, uint32_t(value));
         } break;
         case dm_int32: {
             uint32_t value = 0;
@@ -811,10 +892,10 @@ void print_DMXValues(LiquidCrystal &lcd) {
             value |= uint32_t (DMXSerial.read(dmx_start_channel + 1)) << 16;
             value |= uint32_t (DMXSerial.read(dmx_start_channel + 2)) << 8;
             value |= DMXSerial.read(dmx_start_channel + 1);
-            slight_DebugMenu::print_int32_align_right(lcd, int32_t (value));
+            snprintf(line, sizeof(line), dm_int32_fs, int32_t(value));
         } break;
     }
-
+    lcd.print(line);
 }
 
 void update_LCD(LiquidCrystal &lcd) {
