@@ -265,6 +265,7 @@ bool dmx_valid = false;
 
 uint16_t dmx_start_channel = 1;
 uint8_t dmx_value = 0;
+uint8_t dmx_values_old[] = {0, 0, 0, 0};
 
 enum display_modes {
     dm_uint8,
@@ -766,12 +767,12 @@ void setup_LCD(Print &out) {
 // dm_int16  1  -32768 -32768
 // dm_uint32 1   4294967295
 // dm_int32  1  -2147483648
-char dm_uint8_fs[]  = "% 3u% 3u% 3u% 3u";
-char dm_int8_fs[]   = "% 3d% 3d% 3d% 3d";
-char dm_uint16_fs[] = "% 5u % 5u";
-char dm_int16_fs[]  = "% 5d % 5d";
-char dm_uint32_fs[] = "% 10u";
-char dm_int32_fs[]  = "% 10d";
+char dm_uint8_fs[]  = "%4u%4u%4u%4u";
+char dm_int8_fs[]   = "%4d%4d%4d%4d";
+char dm_uint16_fs[] = "%6u %6u";
+char dm_int16_fs[]  = "%6d %6d";
+char dm_uint32_fs[] = "%11u";
+char dm_int32_fs[]  = "%11d";
 
 cursor_pos_t lp_ch_text = {0, 0};
 cursor_pos_t lp_ch = {3, 0};
@@ -896,6 +897,7 @@ void print_DMXValues(LiquidCrystal &lcd) {
         } break;
     }
     lcd.print(line);
+    DebugOut.println(line);
 }
 
 void update_LCD(LiquidCrystal &lcd) {
@@ -959,7 +961,18 @@ void handle_DMX() {
 	}
 
     if (dmx_valid) {
-        print_DMXValues(lcd);
+        // check if values are new
+        bool flag_new = false;
+        for (size_t i = 0; i < sizeof(dmx_values_old); i++) {
+            uint8_t value_new = DMXSerial.read(dmx_start_channel + i);
+            if (dmx_values_old[i] != value_new) {
+                dmx_values_old[i] = value_new;
+                flag_new = true;
+            }
+        }
+        if (flag_new) {
+            print_DMXValues(lcd);
+        }
         // uint8_t dmx_value_new = DMXSerial.read(dmx_start_channel);
         // set_value(dmx_value_new);
     }
