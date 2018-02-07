@@ -639,30 +639,30 @@ boolean button_getInput(uint8_t id, uint8_t pin) {
 }
 
 void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
-    // Serial.print(F("FRL button:"));
-    // Serial.println((*pInstance).getID());
+    // DebugOut.print(F("FRL button:"));
+    // DebugOut.println((*pInstance).getID());
     //
-    // Serial.print(F("Event: "));
-    // Serial.print(bEvent);
+    // DebugOut.print(F("Event: "));
+    // DebugOut.print(bEvent);
     // // (*pInstance).printEvent(Serial, bEvent);
-    // Serial.println();
+    // DebugOut.println();
 
     uint8_t button_id = (*pInstance).getID();
 
     // show event additional infos:
     switch (bEvent) {
         // case slight_ButtonInput::event_StateChanged : {
-        //     Serial.println(F("\t state: "));
+        //     DebugOut.println(F("\t state: "));
         //     (*pInstance).printlnState(Serial);
-        //     Serial.println();
+        //     DebugOut.println();
         // } break;
         case slight_ButtonInput::event_Down : {
-            // Serial.println(F("FRL down"));
+            // DebugOut.println(F("FRL down"));
         } break;
         case slight_ButtonInput::event_HoldingDown : {
             uint32_t duration = (*pInstance).getDurationActive();
-            // Serial.println(F("duration active: "));
-            // Serial.println(duration);
+            // DebugOut.println(F("duration active: "));
+            // DebugOut.println(duration);
 
             uint8_t count = 1;
 
@@ -693,11 +693,11 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
 
         } break;
         case slight_ButtonInput::event_Up : {
-            Serial.println(F("up"));
+            DebugOut.println(F("up"));
             // myFaderRGB_fadeTo(500, 0, 0, 1);
         } break;
         case slight_ButtonInput::event_Click : {
-            Serial.println(F("click"));
+            DebugOut.println(F("click"));
 
             if (button_id == button_1_BLACK) {
                 dmx_start_channel -= (uint16_t)1;
@@ -716,17 +716,17 @@ void button_onEvent(slight_ButtonInput *pInstance, byte bEvent) {
 
         } break;
         case slight_ButtonInput::event_ClickLong : {
-            Serial.println(F("click long"));
+            DebugOut.println(F("click long"));
         } break;
         case slight_ButtonInput::event_ClickDouble : {
-            // Serial.println(F("click double"));
+            // DebugOut.println(F("click double"));
         } break;
         case slight_ButtonInput::event_ClickTriple : {
-            // Serial.println(F("click triple"));
+            // DebugOut.println(F("click triple"));
         } break;
         // case slight_ButtonInput::event_ClickMulti : {
-        //     Serial.print(F("click count: "));
-        //     Serial.println((*pInstance).getClickCount());
+        //     DebugOut.print(F("click count: "));
+        //     DebugOut.println((*pInstance).getClickCount());
         // } break;
     }  // end switch
 }
@@ -923,20 +923,20 @@ void setup_DMX(Print &out) {
     pinMode(dmx_pin_direction, OUTPUT);
 
     // set to receive mode
-    // Serial.println(F("\t set direction pin to Low = 'Receive' "));
+    // DebugOut.println(F("\t set direction pin to Low = 'Receive' "));
     // digitalWrite(dmx_pin_direction, LOW);
-    Serial.println(F("\t init as DMXReceiver"));
+    out.println(F("\t init as DMXReceiver"));
     DMXSerial.init(DMXReceiver, dmx_pin_direction);
 
     // set to send mode
-    // Serial.println(F("\t set direction pin to High = 'Send' "));
+    // DebugOut.println(F("\t set direction pin to High = 'Send' "));
     // digitalWrite(dmx_pin_direction, HIGH);
-    // Serial.println(F("\t init as DMXController"));
+    // DebugOut.println(F("\t init as DMXController"));
     // DMXSerial.init(DMXController, dmx_pin_direction);
 
 
 
-    // Serial.println(F("\t set some values"));
+    // DebugOut.println(F("\t set some values"));
     // DMXSerial.write(10, 255);
     // DMXSerial.write(11, 255);
     // DMXSerial.write(12, 1);
