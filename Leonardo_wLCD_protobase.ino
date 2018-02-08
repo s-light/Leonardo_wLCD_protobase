@@ -151,14 +151,16 @@ Stream &DebugIn = Serial;
 // attention: in setup_DebugOut 'Serial' is hardcoded used for initialisation
 
 
-boolean infoled_state = 0;
+bool infoled_state = 0;
 const byte infoled_pin = 13;
 
 unsigned long debugOut_LiveSign_TimeStamp_LastAction = 0;
 const uint16_t debugOut_LiveSign_UpdateInterval = 1000; //ms
 
-boolean debugOut_LiveSign_Serial_Enabled = 0;
-boolean debugOut_LiveSign_LED_Enabled = 1;
+bool debugOut_LiveSign_Serial_Enabled = 0;
+bool debugOut_LiveSign_LED_Enabled = 1;
+
+bool dmx_serial_out_enabled = true;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Menu
@@ -276,7 +278,7 @@ enum display_modes {
     dm_int32,
 };
 
-display_modes display_mode = dm_int16;
+display_modes display_mode = dm_uint8;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // other things..
@@ -540,17 +542,11 @@ void handleMenu_Main(slight_DebugMenu *pInstance) {
         case 'A': {
             out.println(F("\t Hello World! :-)"));
         } break;
-        case 'a': {
-            out.println(F("\t toggle sequencer:"));
-            // if (sequencer_mode == sequencer_OFF) {
-            //     /* code */
-            //     sequencer_mode = sequencer_CHANNELCHECK;
-            //     out.print(F("\t sequencer_mode: CHANNELCHECK\n"));
-            // }
-            // else {
-            //     sequencer_mode = sequencer_OFF;
-            //     out.print(F("\t sequencer_mode: OFF\n"));
-            // }
+        case 'd': {
+            out.println(F("\t toggle dmx serial out:"));
+            dmx_serial_out_enabled = !dmx_serial_out_enabled;
+            out.print(F("\t dmx_serial_out_enabled:"));
+            out.println(dmx_serial_out_enabled);
         } break;
         case 's': {
             out.print(F("\t set channel "));
@@ -897,7 +893,13 @@ void print_DMXValues(LiquidCrystal &lcd) {
         } break;
     }
     lcd.print(line);
-    // DebugOut.println(line);
+    if (dmx_serial_out_enabled) {
+        char line2[17];
+        snprintf(line2, sizeof(line2), "%12u:", millis());
+        DebugOut.print(line2);
+        DebugOut.print(line);
+        DebugOut.println();
+    }
 }
 
 void update_LCD(LiquidCrystal &lcd) {
